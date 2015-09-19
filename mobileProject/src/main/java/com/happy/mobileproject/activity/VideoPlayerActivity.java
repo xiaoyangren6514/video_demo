@@ -253,7 +253,7 @@ public class VideoPlayerActivity extends BaseActivity {
 	private void getDataFromLocal() {
 		//播放地址,通常是用来得到：浏览器和本地文件夹管理器，第三方应用
 		 uri = getIntent().getData();
-//		 uri = Uri.parse("http://video.weibo.com/show?fid=1034:8ff053d0e4f080f56dc2c8f8a51c23ed");
+		 uri = Uri.parse("http://10.0.8.253:8080/test.mp4");
 		 //得到传入的播放列表和位置
 		 videoItems =  (ArrayList<MediaItem>) getIntent().getSerializableExtra("videolist");
 		 position = getIntent().getIntExtra("position", 0);
