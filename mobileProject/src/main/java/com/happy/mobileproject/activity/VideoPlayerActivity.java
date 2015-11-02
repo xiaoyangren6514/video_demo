@@ -19,6 +19,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -114,6 +115,8 @@ public class VideoPlayerActivity extends BaseActivity {
      */
     private boolean isPlaying = false;
     private Utils utils;
+
+    private String mTitle;
 
     /**
      * true:当前Activity已经销毁
@@ -261,7 +264,8 @@ public class VideoPlayerActivity extends BaseActivity {
         if (uri != null) {
             videoview.setVideoURI(uri);
             isNewUrl = utils.isNetUrl(uri.toString());
-            tv_videoname.setText(uri.toString());
+            tv_videoname.setText(mTitle);
+//            tv_videoname.setText(uri.toString());
         } else {
             //从播放列表来的
             MediaItem item = videoItems.get(position);
@@ -280,7 +284,12 @@ public class VideoPlayerActivity extends BaseActivity {
 
     private void getDataFromLocal() {
         //播放地址,通常是用来得到：浏览器和本地文件夹管理器，第三方应用
-        uri = getIntent().getData();
+//        uri = getIntent().getData();
+        String url = getIntent().getStringExtra("URI");
+        mTitle = getIntent().getStringExtra("TITLE");
+        if (!TextUtils.isEmpty(url)) {
+            uri = Uri.parse(url);
+        }
 //        uri = Uri.parse("http://video.weibo.com/show?fid=1034:5847cb932ebe04daefd5dfe73d740997");
         //得到传入的播放列表和位置
         videoItems = (ArrayList<MediaItem>) getIntent().getSerializableExtra("videolist");

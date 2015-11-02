@@ -1,18 +1,22 @@
 package com.happy.mobileproject;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import com.happy.mobileproject.activity.VideoPlayerActivity;
 
 
 public class AppMainActivity extends Activity implements View.OnClickListener {
@@ -31,6 +35,7 @@ public class AppMainActivity extends Activity implements View.OnClickListener {
         mWebView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         mWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
         mWebView.getSettings().setJavaScriptEnabled(true);
+        mWebView.addJavascriptInterface(new NativeMethodInterface(), "android");
         mWebView.getSettings().setDefaultTextEncodingName("utf-8");
         mWebView.getSettings().setUseWideViewPort(true);
         mWebView.getSettings().setLoadWithOverviewMode(true);
@@ -57,6 +62,23 @@ public class AppMainActivity extends Activity implements View.OnClickListener {
         mWebView.setWebChromeClient(mChromeClient);
 
         mWebView.loadUrl(url);
+    }
+
+    private class NativeMethodInterface {
+
+        @JavascriptInterface
+        public void showToast(String message) {
+            Toast.makeText(AppMainActivity.this, message, Toast.LENGTH_SHORT).show();
+        }
+
+        @JavascriptInterface
+        public void playVideo(String url,String title){
+            Intent intent = new Intent(getApplicationContext(), VideoPlayerActivity.class);
+            intent.putExtra("URI",url);
+            intent.putExtra("TITLE",title);
+            startActivity(intent);
+        }
+
     }
 
     private WebChromeClient mChromeClient = new WebChromeClient() {
@@ -105,7 +127,7 @@ public class AppMainActivity extends Activity implements View.OnClickListener {
 
     }
 
-    private Handler mHandler = new Handler(){
+    private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
