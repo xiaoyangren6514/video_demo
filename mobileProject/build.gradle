@@ -20,7 +20,9 @@ android {
 }
 
 dependencies {
-    compile project(':Vtamio_InitActivity')
+    //    compile project(':Vtamio_InitActivity')
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.loopj.android:android-async-http:1.4.9'
+    compile files('libs/fastjson-1.1.43.android.jar')
 }

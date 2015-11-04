@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -16,7 +17,15 @@ import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.alibaba.fastjson.JSON;
 import com.happy.mobileproject.activity.VideoPlayerActivity;
+import com.happy.mobileproject.domain.VideoItem;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+
+import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
 
 
 public class AppMainActivity extends Activity implements View.OnClickListener {
@@ -72,13 +81,51 @@ public class AppMainActivity extends Activity implements View.OnClickListener {
         }
 
         @JavascriptInterface
-        public void playVideo(String url,String title){
+        public void playVideo(String url, String title) {
+            loadDataFromNetWork(url);
             Intent intent = new Intent(getApplicationContext(), VideoPlayerActivity.class);
-            intent.putExtra("URI",url);
-            intent.putExtra("TITLE",title);
+            intent.putExtra("URI", url);
+            intent.putExtra("TITLE", title);
             startActivity(intent);
         }
 
+    }
+
+    /**
+     * 从网络加载数据
+     *
+     * @param url
+     */
+    private void loadDataFromNetWork(String url) {
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.post(url, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                if (response != null) {
+                    int result = response.optInt("result");
+                    String msg = response.optString("msg");
+                    if (result == 1) {
+                        String data = response.optString("data");
+                        VideoItem videoItem = JSON.parseObject(data, VideoItem.class);
+                        if (!TextUtils.isEmpty(videoItem.getVPlayAddr())) {
+                            Intent intent = VideoPlayerActivity.createIntent(AppMainActivity.this,videoItem);
+                            startActivity(intent);
+                        } else {
+                            Toast.makeText(AppMainActivity.this, "视频加载失败,请重试", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(AppMainActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(AppMainActivity.this, "视频加载失败,请重试", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                Toast.makeText(AppMainActivity.this, "视频加载失败,请重试", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private WebChromeClient mChromeClient = new WebChromeClient() {

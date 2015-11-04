@@ -1,10 +1,8 @@
 package com.happy.mobileproject.activity;
 
-import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
@@ -36,6 +34,7 @@ import android.widget.Toast;
 
 import com.happy.mobileproject.R;
 import com.happy.mobileproject.domain.MediaItem;
+import com.happy.mobileproject.domain.VideoItem;
 import com.happy.mobileproject.download.DownloadManagerPro;
 import com.happy.mobileproject.utils.Utils;
 import com.happy.mobileproject.view.VideoView;
@@ -49,6 +48,8 @@ import java.util.ArrayList;
  * @author 阿福
  */
 public class VideoPlayerActivity extends BaseActivity {
+
+    private static final String VIDEOITEM_MODEL = "videoItemModel";
 
     /**
      * 进度更新消息
@@ -163,6 +164,8 @@ public class VideoPlayerActivity extends BaseActivity {
      */
     private boolean isNewUrl = false;
 
+    private VideoItem mVideoItem;
+
     private Handler handler = new Handler() {
         public void handleMessage(android.os.Message msg) {
             switch (msg.what) {
@@ -225,10 +228,10 @@ public class VideoPlayerActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
 //		Toast.makeText(getApplicationContext(), "当前系统播放器播放视频", 0).show();
         setTitleBar(View.GONE);
+        mVideoItem = (VideoItem) getIntent().getSerializableExtra(VIDEOITEM_MODEL);
         initData();
         getDataFromLocal();
 
-        System.out.println("视频播放地址是：" + uri);
         initView();
         setPlayData();
         setListener();
@@ -250,10 +253,10 @@ public class VideoPlayerActivity extends BaseActivity {
         if (!folder.exists() || !folder.isDirectory()) {
             folder.mkdirs();
         }
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(APK_URL));
-        request.setDestinationInExternalPublicDir(DOWNLOAD_FOLDER_NAME, DOWNLOAD_FILE_NAME);
-        request.setTitle("");
-        request.setDescription("");
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(DOWNLOAD_VIDEO_URL));
+        request.setDestinationInExternalPublicDir(DOWNLOAD_FOLDER_NAME, mTitle + DOWNLOAD_FILE_NAME_SUFFIX);
+        request.setTitle("下载中");
+        request.setDescription("真的在下载中");
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setVisibleInDownloadsUi(false);
         request.setMimeType("application/com.happy.download.file");
@@ -285,12 +288,14 @@ public class VideoPlayerActivity extends BaseActivity {
     private void getDataFromLocal() {
         //播放地址,通常是用来得到：浏览器和本地文件夹管理器，第三方应用
 //        uri = getIntent().getData();
-        String url = getIntent().getStringExtra("URI");
-        mTitle = getIntent().getStringExtra("TITLE");
+//        String url = getIntent().getStringExtra("URI");
+//        mTitle = getIntent().getStringExtra("TITLE");
+        String url = mVideoItem.getVPlayAddr();
+        mTitle = mVideoItem.getVName();
         if (!TextUtils.isEmpty(url)) {
+            DOWNLOAD_VIDEO_URL = url;
             uri = Uri.parse(url);
         }
-//        uri = Uri.parse("http://video.weibo.com/show?fid=1034:5847cb932ebe04daefd5dfe73d740997");
         //得到传入的播放列表和位置
         videoItems = (ArrayList<MediaItem>) getIntent().getSerializableExtra("videolist");
         position = getIntent().getIntExtra("position", 0);
@@ -431,6 +436,12 @@ public class VideoPlayerActivity extends BaseActivity {
      */
     private void sendHideMessage() {
         handler.sendEmptyMessageDelayed(DELAYED_HIDE_MESSAGE, 6000);
+    }
+
+    public static Intent createIntent(Context context, VideoItem videoItem) {
+        Intent intent = new Intent(context, VideoPlayerActivity.class);
+        intent.putExtra(VIDEOITEM_MODEL, videoItem);
+        return intent;
     }
 
     class MyBroadcastReceiver extends BroadcastReceiver {
@@ -632,9 +643,9 @@ public class VideoPlayerActivity extends BaseActivity {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 // TODO Auto-generated method stub
-//				Toast.makeText(getApplicationContext(), "视频播放出错了..", 1).show();
+                Toast.makeText(getApplicationContext(), "视频播放出错了..", Toast.LENGTH_SHORT).show();
                 //1.播放的格式不支持的时候，会出错。--集成万能播放器
-                startVitamioPlayer();
+//                startVitamioPlayer();
                 //2.文件下载不完整，中间有空白。-播放器没法解决
                 //3.播放网络视频，突然没有网络了-段段续续-重新播放器-重新播放三次-出错了再弹出对话框
 
@@ -691,23 +702,23 @@ public class VideoPlayerActivity extends BaseActivity {
     /**
      * 跳转到万能播放器里面去
      */
-    protected void startVitamioPlayer() {
-        //当点击的时候传播放列表和当前点击的位置
-        Intent intent = new Intent(this, VitamioPlayerActivity.class);
-        if (uri != null) {
-            intent.setData(uri);
-        } else {
-            //传入播放列表的初级
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("videolist", videoItems);//视频列表
-            intent.putExtras(bundle);
-            intent.putExtra("position", position);
-        }
-
-        startActivity(intent);
-        handler.sendEmptyMessageDelayed(FINISH, 2000);
-
-    }
+//    protected void startVitamioPlayer() {
+//        //当点击的时候传播放列表和当前点击的位置
+//        Intent intent = new Intent(this, VitamioPlayerActivity.class);
+//        if (uri != null) {
+//            intent.setData(uri);
+//        } else {
+//            //传入播放列表的初级
+//            Bundle bundle = new Bundle();
+//            bundle.putSerializable("videolist", videoItems);//视频列表
+//            intent.putExtras(bundle);
+//            intent.putExtra("position", position);
+//        }
+//
+//        startActivity(intent);
+//        handler.sendEmptyMessageDelayed(FINISH, 2000);
+//
+//    }
 
     private OnClickListener mOnClickListener = new OnClickListener() {
 
@@ -743,25 +754,24 @@ public class VideoPlayerActivity extends BaseActivity {
                     break;
                 case R.id.btn_switch_player://切换播放器
                     //当前是系统播放器—要切换到万能播放器
-
-
-                    new AlertDialog.Builder(VideoPlayerActivity.this)
-                            .setTitle("提示")
-                            .setMessage("当前是系统播放器播放视频，是否要切换到万能播放器播放")
-                            .setNegativeButton("取消", null)
-                            .setPositiveButton("切换",
-                                    new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int whichButton) {
-                                /* If we get here, there is no onError listener, so
-                                 * at least inform them that the video is over.
-                                 */
-//                               finish();
-                                            startVitamioPlayer();
-                                        }
-                                    })
-
-                            .setCancelable(false)
-                            .show();
+                    startDownLoad();
+//                    new AlertDialog.Builder(VideoPlayerActivity.this)
+//                            .setTitle("提示")
+//                            .setMessage("当前是系统播放器播放视频，是否要切换到万能播放器播放")
+//                            .setNegativeButton("取消", null)
+//                            .setPositiveButton("切换",
+//                                    new DialogInterface.OnClickListener() {
+//                                        public void onClick(DialogInterface dialog, int whichButton) {
+//                                /* If we get here, there is no onError listener, so
+//                                 * at least inform them that the video is over.
+//                                 */
+////                               finish();
+//                                            startVitamioPlayer();
+//                                        }
+//                                    })
+//
+//                            .setCancelable(false)
+//                            .show();
                     break;
                 default:
                     break;
@@ -1009,10 +1019,10 @@ public class VideoPlayerActivity extends BaseActivity {
         }
     }
 
-    public static final String DOWNLOAD_FOLDER_NAME = "fastloan";
-    public static final String DOWNLOAD_FILE_NAME = "jisudai.apk";
+    public static final String DOWNLOAD_FOLDER_NAME = "videotest";
+    public static final String DOWNLOAD_FILE_NAME_SUFFIX = ".mp4";
 
-    public static final String APK_URL = "http://img.meilishuo.net/css/images/AndroidShare/Meilishuo_3.6.1_10006.apk";
+    public String DOWNLOAD_VIDEO_URL;
     public static final String KEY_NAME_DOWNLOAD_ID = "downloadId";
 
     private DownloadManager downloadManager;
